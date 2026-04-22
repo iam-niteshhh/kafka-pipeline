@@ -6,6 +6,16 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
 
+  postgres:
+    image: postgres:15
+    container_name: postgres-db
+    environment:
+      POSTGRES_USER: kafka
+      POSTGRES_PASSWORD: kafka
+      POSTGRES_DB: events_db
+    ports:
+      - "5432:5432"
+
   kafka:
     image: confluentinc/cp-kafka:7.4.0
     depends_on:
