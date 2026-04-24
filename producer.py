@@ -4,6 +4,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 import random
 import time
+import uuid
 
 producer  = KafkaProducer(
     bootstrap_servers='localhost:9092',
@@ -17,6 +18,7 @@ logging.info("Starting to produce events...")
 
 while True:
     data = {
+        "event_id": str(uuid.uuid4()),
         "user_id": random.randint(1, 1000),
         "event": random.choice(events),
         "device": random.choice(devices),

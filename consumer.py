@@ -15,7 +15,7 @@ consumer = KafkaConsumer(
     bootstrap_servers='localhost:9092',
     auto_offset_reset='latest',
     value_deserializer=lambda x: json.loads(x.decode('utf-8')),
-    enable_auto_commit=True,
+    enable_auto_commit=False, # for manual commit after processing -> ensusre we read it and stored in DB before commiting
     group_id='event_consumers'
 )
 
@@ -45,6 +45,7 @@ for message in consumer:
     
     # logging.info(f"Consumed event: {event}")
     batch.append((
+        event['event_id'],
         event['user_id'],
         event['event'],
         event['device'],
@@ -61,10 +62,15 @@ for message in consumer:
                     logging.warning("Simulated DB failure. Retrying...")
                     raise Exception("Simulated DB failure")
                 cursor.executemany(
-                    "INSERT INTO user_events (user_id, event, device, timestamp) VALUES (%s, %s, %s, %s)",
+                    """
+                    INSERT INTO user_events (event_id, user_id, event, device, timestamp)
+                    VALUES (%s, %s, %s, %s, %s)
+                    ON CONFLICT (event_id) DO NOTHING
+                    """,
                     batch
                 )
                 conn.commit()
+                consumer.commit()  # Commit Kafka offsets after successful DB insert
                 batch.clear()
                 break
             except Exception as e:
